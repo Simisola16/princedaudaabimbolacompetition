@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Dashboard - Under-10</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    body {
+      background: #f4f6fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px 20px;
+    }
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .player-card {
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      background: white;
+      text-align: center;
+    }
+    .player-card img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 15px;
+    }
+    .player-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .player-info {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 10px;
+      }
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      .player-card {
+        padding: 15px;
+      }
+      .player-card img {
+        width: 80px;
+        height: 80px;
+      }
+      .player-name {
+        font-size: 1rem;
+      }
+      .player-info {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 15px 8px;
+      }
+      .dashboard-header {
+        gap: 10px;
+      }
+      .player-card {
+        padding: 10px;
+      }
+      .player-card img {
+        width: 60px;
+        height: 60px;
+      }
+      .player-name {
+        font-size: 0.9rem;
+      }
+      .player-info {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="d-flex align-items-center">
+            <img id="teamLogo" src="" alt="Team Logo" class="me-3" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; display: none;">
+            <h2 id="teamName" class="fw-bold mb-0"></h2>
+        </div>
+        <div>
+            <button class="btn btn-success me-2 disabled" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
+                + Add Player
+            </button>
+            <button class="btn btn-outline-danger" id="logoutBtn">Logout</button>
+        </div>
+    </div>  
+
+    <!-- Player Cards Grid -->
+    <div class="row" id="playerList"></div>
+    <div>
+        <div id="errorP" class="text-danger mt-2"></div>
+    </div>
+
+  <!-- Add Player Modal -->
+  <div class="modal fade" id="addPlayerModal" tabindex="-1" aria-labelledby="addPlayerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" id="addPlayerForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addPlayerModalLabel">Add New Player</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="playerName" class="form-label">Player Name</label>
+            <input type="text" class="form-control" id="playerName" required>
+          </div>
+          <div class="mb-3">
+            <label for="playerAge" class="form-label">Age</label>
+            <input type="number" class="form-control" id="playerAge" required>
+          </div>
+          <div class="mb-3">
+            <label for="playerPosition" class="form-label">Position</label>
+            <input type="text" class="form-control" id="playerPosition" required>
+          </div>
+          <div class="mb-3">
+            <label for="playerImage" class="form-label">Player Photo</label>
+            <input type="file" class="form-control" id="playerImage" accept="image/*">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Add Player</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmhb4kGKFX_B4PNVmhlFfKZ0tL1oigi9E",
+      authDomain: "telu-5ad31.firebaseapp.com",
+      projectId: "telu-5ad31",
+      storageBucket: "telu-5ad31.firebasestorage.app",
+      messagingSenderId: "868265845966",
+      appId: "1:868265845966:web:aa02226a7a841657375c9f",
+      measurementId: "G-3GJB7YDBZ6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const playerList = document.getElementById('playerList');
+    const addPlayerForm = document.getElementById('addPlayerForm');
+    const errorP = document.getElementById('errorP');
+    const teamName = document.getElementById('teamName');
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        Swal.fire("Unauthorized", "Please log in to view your team dashboard.", "warning").then(() => {
+          window.location.href = "./under-15-log-in.html";
+        });
+        return;
+      }
+
+      const uid = user.uid;
+      const teamRef = doc(db, "teams", uid);
+      const teamSnap = await getDoc(teamRef);
+
+      if (!teamSnap.exists()) {
+        teamName.textContent = "Team Info Not Found";
+        return;
+      }
+
+
+      const teamData = teamSnap.data();
+      teamName.textContent = teamData.name || "Unnamed Team";
+
+      const logo = document.getElementById("teamLogo");
+      if (teamData.image) {
+        logo.src = teamData.image;
+        logo.style.display = "block";
+      }
+
+      const addButton = document.querySelector('[data-bs-target="#addPlayerModal"]');
+      if (!teamData.isApproved) {
+        addButton.disabled = true;
+        addButton.textContent = "Waiting for Admin Approval";
+        addButton.classList.replace("btn-success", "btn-secondary");
+      } else {
+        addButton.classList.remove("disabled");
+        loadPlayers(uid);
+      }
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+            Swal.fire("Logged out", "You have been signed out.", "success").then(() => {
+            window.location.href = "./under-15-log-in.html";
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+            Swal.fire("Error", "Failed to log out. Please try again.", "error");
+        }
+        });
+      addPlayerForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        errorP.textContent = "";
+
+        const playerRef = collection(db, "teams", uid, "players");
+        const currentPlayers = await getDocs(playerRef);
+
+        if (currentPlayers.size >= 20) {
+            errorP.textContent = "Maximum number of players (20) reached.";
+            return;
+        }
+
+        const name = document.getElementById('playerName').value;
+        const age = document.getElementById('playerAge').value;
+        const position = document.getElementById('playerPosition').value;
+        const fileInput = document.getElementById('playerImage');
+        let imageURL = 'https://via.placeholder.com/100';
+
+        try {
+          if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 1048576) {
+              errorP.textContent = "Image size must be less than 1MB.";
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+              imageURL = e.target.result;
+              await saveAndDisplayPlayer(uid, name, age, position, imageURL);
+            };
+            reader.readAsDataURL(file);
+          } else {
+            await saveAndDisplayPlayer(uid, name, age, position, imageURL);
+          }
+
+          addPlayerForm.reset();
+          bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')).hide();
+        } catch (error) {
+          console.log(error.message);
+          errorP.textContent = "Failed to add player. Please try again.";
+        }
+      });
+    });
+
+    async function saveAndDisplayPlayer(uid, name, age, position, imageURL) {
+      const playerRef = collection(db, "teams", uid, "players");
+      const playerData = { name, age, position, imageURL, createdAt: new Date() };
+      await addDoc(playerRef, playerData);
+      createPlayerCard(name, age, position, imageURL);
+    }
+
+    async function loadPlayers(uid) {
+      playerList.innerHTML = '';
+      const playerRef = collection(db, "teams", uid, "players");
+      const querySnapshot = await getDocs(playerRef);
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        createPlayerCard(data.name, data.age, data.position, data.imageURL || 'https://via.placeholder.com/100');
+      });
+    }
+
+    function createPlayerCard(name, age, position, image) {
+      const col = document.createElement('div');
+      col.className = 'col-md-4 mb-4';
+      col.innerHTML = `
+        <div class="player-card">
+          <img src="${image}" alt="${name}'s photo" />
+          <div class="player-name">${name}</div>
+          <div class="player-info">Age: ${age}</div>
+          <div class="player-info">Position: ${position}</div>
+        </div>
+      `;
+      playerList.appendChild(col);
+    }
+  </script>
+</body>
+</html>
