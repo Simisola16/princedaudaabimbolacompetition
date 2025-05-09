@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Teams Overview</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    body {
+      padding: 30px;
+      background-color: #f8f9fa;
+      font-family: 'Roboto', Arial, sans-serif;
+      color: #343a40;
+    }
+    .navbar {
+      background-color: #343a40;
+      padding: 10px 0;
+      margin-bottom: 30px;
+    }
+    .navbar-brand {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-decoration: none;
+      margin-left: 15px;
+    }
+    .navbar-brand:hover {
+      color: #adb5bd;
+      text-decoration: none;
+    }
+    .team-card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+      padding: 24px;
+      transition: box-shadow 0.3s ease;
+    }
+    .team-card:hover {
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .team-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .team-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .team-info img {
+      width: 30px;
+      height: 30px;
+      object-fit: cover;
+      border-radius: 10%;
+      border: 2px solid #6c757d;
+    }
+    .team-info h5 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #212529;
+    }
+    .status-text {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .player-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 0.95rem;
+      color: #495057;
+    }
+    .player-item:last-child {
+      border-bottom: none;
+    }
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .player-info img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1.5px solid #ced4da;
+    }
+    .btn {
+      font-size: 0.85rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .btn-sm {
+      padding: 0.25rem 0.6rem;
+    }
+    .btn-success:hover {
+      background-color: #198754;
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background-color: #c82333;
+      color: #fff;
+    }
+    .btn-outline-danger:hover {
+      background-color: #dc3545;
+      color: #fff;
+      border-color: #dc3545;
+    }
+    h2 {
+      font-weight: 700;
+      color: #212529;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .container {
+      max-width: 900px;
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    .info-img{
+      width: 60px;
+      height: 60px;
+    }
+    /* New styles for admin image */
+    .admin-image {
+      width: 120px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+    }
+    .admin-image:hover {
+      transform: scale(1.05);
+    }
+    /* Responsive media queries */
+    @media (max-width: 768px) {
+      .admin-image {
+        width: 90px;
+      }
+      body {
+        padding: 15px;
+      }
+      .container {
+        max-width: 100%;
+        padding: 0 10px;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+    }
+    @media (max-width: 480px) {
+      .admin-image {
+        width: 70px;
+      }
+      h2 {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 10px;">
+      <!-- <a href="../index.html"> -->
+        <img src="./Prince daud competition.jpg" class="admin-image" alt="">
+      </a>
+    </div>
+    <h2 class="mb-4 fw-bold">Admin Dashboard - Teams & Players</h2>
+    <div id="teamList"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      deleteDoc,
+      doc,
+      getDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmhb4kGKFX_B4PNVmhlFfKZ0tL1oigi9E",
+      authDomain: "telu-5ad31.firebaseapp.com",
+      projectId: "telu-5ad31",
+      storageBucket: "telu-5ad31.firebasestorage.app",
+      messagingSenderId: "868265845966",
+      appId: "1:868265845966:web:aa02226a7a841657375c9f",
+      measurementId: "G-3GJB7YDBZ6"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const teamList = document.getElementById("teamList");
+  
+    onAuthStateChanged(auth, (user) => {
+      if (!user || user.email !== "olamilekanmuhayad@yahoo.com") {
+        window.location.href = "./admin-log-in.html";
+      }
+    });
+  
+    // Load Teams and Their Players
+    async function loadTeams() {
+      teamList.innerHTML = "";
+      const teamsSnapshot = await getDocs(collection(db, "teams"));
+  
+      for (const teamDoc of teamsSnapshot.docs) {
+        const teamId = teamDoc.id;
+        const teamData = teamDoc.data();
+  
+        const playersSnapshot = await getDocs(collection(db, "teams", teamId, "players"));
+        const players = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+        const card = document.createElement("div");
+        card.className = "team-card";
+  
+        const approvedText = teamData.isApproved ? "Approved" : "Pending Approval";
+        const approveButton = !teamData.isApproved
+          ? `<button class="btn btn-sm btn-success me-2" onclick="approveTeam('${teamId}', this)">Approve</button>`
+          : "";
+  
+        card.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <img class="info-img" src=${teamData.image || ""} alt="">
+              <h5>${teamData.name || teamData.email || teamId}</h5>
+              <p class="mb-1"><strong>Status:</strong> ${approvedText}</p>
+            </div>
+            <div>
+              ${approveButton}
+              <button class="btn btn-danger btn-sm" onclick="deleteTeam('${teamId}')">Delete Team</button>
+            </div>
+          </div>
+          <div class="mt-3">
+            <h6>Players (${players.length})</h6>
+            <div>
+              ${players.map(player => `
+                <div class="player-item">
+                  <div>
+                    <img src=${player.imageURL || ""} alt="">
+                  </div>
+                  <span>Name: ${player.name} - Age: ${player.age}, Position: ${player.position}</span>
+                  <button class="btn btn-sm btn-outline-danger" onclick="deletePlayer('${teamId}', '${player.id}', this)">Delete</button>
+                </div>
+              `).join('')}
+              ${players.length === 0 ? '<p class="text-muted">No players.</p>' : ''}
+            </div>
+          </div>
+        `;
+        teamList.appendChild(card);
+      }
+    }
+  
+    // Delete Player
+    window.deletePlayer = async (teamId, playerId, btn) => {
+      const confirm = await Swal.fire({
+        title: "Delete player?",
+        text: "This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        confirmButtonText: "Yes, delete"
+      });
+  
+      if (confirm.isConfirmed) {
+        await deleteDoc(doc(db, "teams", teamId, "players", playerId));
+        btn.parentElement.remove();
+        Swal.fire("Deleted!", "Player removed.", "success");
+      }
+    };
+  
+    // Delete Team
+    window.deleteTeam = async (teamId) => {
+      const confirm = await Swal.fire({
+        title: "Delete entire team?",
+        text: "All players will also be deleted.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        confirmButtonText: "Yes, delete team"
+      });
+  
+      if (confirm.isConfirmed) {
+        const playerCollection = collection(db, "teams", teamId, "players");
+        const playerDocs = await getDocs(playerCollection);
+        for (const docSnap of playerDocs.docs) {
+          await deleteDoc(doc(docSnap.ref));
+        }
+  
+        await deleteDoc(doc(db, "teams", teamId));
+        Swal.fire("Deleted!", "Team and its players removed.", "success");
+        loadTeams();
+      }
+    };
+  
+    // ✅ Approve Team Function
+    window.approveTeam = async (teamId, btn) => {
+      try {
+        await setDoc(doc(db, "teams", teamId), { isApproved: true }, { merge: true });
+        Swal.fire("Approved!", "Team is now approved to add players.", "success");
+        loadTeams();
+      } catch (error) {
+        console.error("Approval failed:", error);
+        Swal.fire("Error", "Could not approve the team.", "error");
+      }
+    };
+    loadTeams();
+  </script>  
+</body>
+</html>

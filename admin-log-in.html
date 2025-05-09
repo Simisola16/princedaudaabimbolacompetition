@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div style="text-align: center; margin-bottom: 10px;">
+      <a href="../index.html">
+        <img src="./Prince daud competition.jpg" width="100" alt="">
+      </a>
+    </div>
+    <h3 class="text-center mb-4">Admin Login</h3>
+    <form id="loginForm">
+      <div class="mb-3">
+        <label for="email" class="form-label">Admin Email</label>
+        <input type="email" class="form-control" id="email" required />
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" required />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAmhb4kGKFX_B4PNVmhlFfKZ0tL1oigi9E",
+        authDomain: "telu-5ad31.firebaseapp.com",
+        projectId: "telu-5ad31",
+        storageBucket: "telu-5ad31.firebasestorage.app",
+        messagingSenderId: "868265845966",
+        appId: "1:868265845966:web:aa02226a7a841657375c9f",
+        measurementId: "G-3GJB7YDBZ6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Redirect if already logged in
+    onAuthStateChanged(auth, user => {
+      if (user && user.email === "olamilekanmuhayad@yahoo.com") {
+        window.location.href = "./admin.html";
+      }
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (userCredential.user.email !== "olamilekanmuhayad@yahoo.com") {
+          throw new Error("Unauthorized user");
+        }
+        Swal.fire("Success", "Login successful!", "success").then(() => {
+          window.location.href = "./admin.html";
+        });
+      } catch (error) {
+        Swal.fire("Error", error.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>
